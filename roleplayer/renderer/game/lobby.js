@@ -34,7 +34,8 @@
   <aside class="gd-side">
     ${GD.panel("03", "Your games on this PC", `<ul id="here"><li class="empty">None yet. A game you host or join is listed here, so you can return to it.</li></ul>`)}
     <section class="hud" id="campaigns" hidden><h2 class="hud-h"><span class="ix">04</span>Campaigns hosted here<span class="tail">Reopen one, or reread its log</span></h2><ul id="camp"></ul></section>
-    ${GD.panel("05", "Ship & crew creator", `<p class="note" style="padding-bottom:12px">Build the ships and crews captains choose when they join. They are kept in the library of the game server: open it once you host, or once you have joined.</p><div class="btns"><button class="btn" type="button" id="b-creator">Open the creator</button></div><p class="err" id="c-err" hidden></p>`)}
+    ${GD.ai.panel("05")}
+    ${GD.panel("06", "Ship & crew creator", `<p class="note" style="padding-bottom:12px">Build the ships and crews captains choose when they join. They are kept in the library of the game server: open it once you host, or once you have joined.</p><div class="btns"><button class="btn" type="button" id="b-creator">Open the creator</button></div><p class="err" id="c-err" hidden></p>`)}
   </aside>
 </main></div>`);
     const digits = el => el.addEventListener("input", () => { el.value = el.value.replace(/\D+/g, "").slice(0, el.maxLength); });
@@ -45,6 +46,7 @@
       const port = parseInt($("#h-port").value, 10), code = $("#h-code").value;
       if (!(port >= 1024 && port <= 65535)) return GD.error({ message: "Choose a port from 1024 to 65535." }, "#h-err");
       if (!/^\d{4}$/.test(code)) return GD.error({ message: "Enter all four digits of the join code." }, "#h-err");
+      if (!GD.ai.ready()) return GD.error({ message: "Set up the AI engine and choose a model first (in the AI engine panel)." }, "#h-err");
       host(port).then(() => { GD.joinCode = code; GD.setup(); }).catch(e => GD.error(e, "#h-err"));
     });
     $("#f-join").addEventListener("submit", ev => {
@@ -66,6 +68,7 @@
       const port = parseInt($("#h-port").value, 10) || GD.DEFAULT_PORT;
       host(port).then(() => GD.Creator.open(GD.connect)).catch(e => GD.error(e, "#c-err"));
     });
+    GD.ai.mount();
     listHere();
     listCampaigns(parseInt($("#h-port").value, 10) || GD.DEFAULT_PORT);
   };

@@ -284,6 +284,65 @@ async function chatStream({ model, messages, temperature, context, penalty, thin
   return text.trim();
 }
 
+/* ---------- the game's own calls to the engine ---------- */
+/* The game server (game/llm.js) asks for a reply in one piece, or streamed a piece at a time to onText. A JSON call gives
+   its JSON schema as format, which the engine holds the reply to. Unlike chat() above, these calls are not cut off
+   by the interface's stop: each game turn has its own signal. */
+function gameBody({ model, messages, temperature, json, format, context, limit }, stream) {
+  const body = { model, messages, stream, think: false, options: { num_ctx: context } };
+  if (temperature != null) body.options.temperature = temperature;
+  if (limit) body.options.num_predict = limit;
+  if (format) body.format = format; else if (json) body.format = "json";
+  return body;
+}
+async function gameChat(req) {
+  await formatted(req.model);
+  const out = await (await engineCall("/api/chat", gameBody(req, false), 15 * 60 * 1000, req.signal)).json();
+  return (out.message && out.message.content || "").trim();
+}
+async function gameChatStream(req) {
+  await formatted(req.model);
+  let text = "";
+  for await (const j of jsonLines(await engineCall("/api/chat", gameBody(req, true), 15 * 60 * 1000, req.signal))) {
+    const piece = j.message && j.message.content || "";
+    if (piece) { text += piece; if (req.onText) req.onText(piece); }
+  }
+  return text.trim();
+}
+
+/* ---------- the game server, run on this PC when it hosts ---------- */
+/* The model the game runs on, chosen on the start screen, and kept in a file of its own. */
+const GAME_SETTINGS = path.join(DATA, "game-settings.json");
+const GAME_CONTEXT = 16384;                             // tokens the engine holds for a game call: the prompts carry the whole scene; less if the model takes less
+const gameSettings = { model: "", context: GAME_CONTEXT, temperature: undefined };   // shared with the server, which reads it on every call
+function loadGameSettings() {
+  try { Object.assign(gameSettings, JSON.parse(fs.readFileSync(GAME_SETTINGS, "utf8"))); } catch {}   // none yet: no model chosen
+  return { model: gameSettings.model };
+}
+async function chooseGameModel(model) {
+  gameSettings.model = String(model || "");
+  gameSettings.context = gameSettings.model && engineInstalled() ? Math.min(GAME_CONTEXT, await modelContext(gameSettings.model).catch(() => 0) || GAME_CONTEXT) : GAME_CONTEXT;
+  fs.mkdirSync(DATA, { recursive: true });
+  fs.writeFileSync(GAME_SETTINGS + ".tmp", JSON.stringify({ model: gameSettings.model, context: gameSettings.context }));
+  fs.renameSync(GAME_SETTINGS + ".tmp", GAME_SETTINGS);
+  return { model: gameSettings.model };
+}
+let gameServer = null;                                  // { port, server } while this PC hosts
+/* Starts the game server on the port asked for, or reports the one already running. It listens on every network of
+   this PC, so captains on other PCs can join; Windows may ask once whether to allow that. */
+async function hostGame({ port }) {
+  if (gameServer) return { port: gameServer.port };
+  const { createServer } = require("./game/server.js");
+  const standard = (await voices()).filter(v => !v.needs.length).map(v => ({ id: v.id, name: v.name, gender: v.gender, accent: v.accent }));
+  const server = createServer({
+    dataDir: path.join(DATA, "game"), llm: { chat: gameChat, chatStream: gameChatStream }, voices: standard,
+    safety: checkSafety, settings: gameSettings, port: Number(port) || 47800, host: "0.0.0.0"
+  });
+  const listening = await server.listen();
+  gameServer = { port: listening.port, server };
+  return { port: listening.port };
+}
+
 /* ---------- speech (Kokoro voices and Whisper recognition, both shipped with the program) ---------- */
 let ttsReady = null, sttReady = null;
 /* The library that runs the models shipped with the program. It finds a speech model by its name in the speech models'
@@ -748,6 +807,9 @@ ipcMain.on("tts:stop", () => { for (const stop of speaking) stop.abort(); });
 handle("stt:transcribe", samples => transcribe(samples));
 handle("system:check", request => checkComputer(request));
 handle("warm", request => warm(request));
+handle("game:host", request => hostGame(request || {}));
+handle("game:settings", () => loadGameSettings());
+handle("game:model", model => chooseGameModel(model));
 
 /* A record of every request made to the model, one file per roleplay, for the admin page. */
 const LOGS = path.join(DATA, "logs");
@@ -764,7 +826,7 @@ function createWindow() {
     width: 1280, height: 860, minWidth: 360, minHeight: 560, backgroundColor: "#0B0D12", title: "Galactic Dominion",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false }
   });
-  win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  win.loadFile(path.join(__dirname, "renderer", "game.html"));
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
 }
 
@@ -846,9 +908,10 @@ app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(
 app.whenReady().then(() => {
   if (!onlyCopy) return;
   if (SELFTEST) return selfTest();
+  loadGameSettings();
   createWindow();
   if (engineInstalled()) aiEngine.start().catch(() => {});
   spoken("Hello.", "af_heart").catch(() => {});         // load the voice now, so the first line of a scene is not delayed
 });
 app.on("window-all-closed", () => app.quit());
-app.on("quit", () => { aiEngine.stop(); voiceEngine.stop(); });
+app.on("quit", () => { aiEngine.stop(); voiceEngine.stop(); if (gameServer) gameServer.server.close(); });

@@ -47,5 +47,8 @@ contextBridge.exposeInMainWorld("api", {
   transcribe: call("stt:transcribe"),
   checkComputer: call("system:check"),
   warm: call("warm"),
+  hostGame: call("game:host"),
+  gameSettings: call("game:settings"),
+  chooseGameModel: call("game:model"),
   onProgress: fn => ipcRenderer.on("progress", (_e, info) => fn(info))
 });
