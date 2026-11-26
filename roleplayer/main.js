@@ -295,11 +295,10 @@ function gameBody({ model, messages, temperature, json, format, context, limit }
   if (format) body.format = format; else if (json) body.format = "json";
   return body;
 }
-async function gameChat(req) {
-  await formatted(req.model);
-  const out = await (await engineCall("/api/chat", gameBody(req, false), 15 * 60 * 1000, req.signal)).json();
-  return (out.message && out.message.content || "").trim();
-}
+/* Asked for as a stream all the same: the engine then answers at once and keeps the connection busy, where a reply in
+   one piece sends nothing until it is complete, and a request that hears nothing for five minutes is given up. A slow
+   PC can take longer than that to write a campaign. */
+const gameChat = req => gameChatStream({ ...req, onText: null });
 async function gameChatStream(req) {
   await formatted(req.model);
   let text = "";
