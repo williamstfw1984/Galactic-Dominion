@@ -29,6 +29,27 @@ Owner decisions:
 | Orders | Every game order is spoken or typed and sent to the AI, as in the plugin. Only the game menu and system dialogues are buttons |
 | Look | The HUD style of the approved mockups: https://claude.ai/artifact/NUGWyCnnzoFMXX7oqaj2xi (dark glass panels, cyan glow, cut corners, corner brackets, Orbitron / Rajdhani / Exo 2, amber for "you" and "your turn") |
 
+## The safety check (kept from the desktop app)
+
+The app's safety check (`main.js` `checkSafety`, the messages in `built-in.js` `safety`, the helplines in
+`helplines.js`) runs in the game:
+
+- **Every order a captain gives** (typed or heard) is checked as the user's text before it is acted on. If it is
+  flagged, the order is not carried out and costs nothing.
+- **Every line the AI writes** (narration, crew, characters, the Computer) is checked as a character's text before it
+  is shown or spoken. A flagged line is removed, with what the turn would have shown after it.
+- The check runs on the host, where the game server is. The help screen (the app's existing messages: the flagged
+  message, the helplines for **that player's own country**, "carry on" and "close") appears **only on the screen of
+  the captain concerned**: the one who gave the order, or whose turn produced the line.
+- **Other players see only that the captain's turn is on hold**, with no reason given ("Captain X's turn is on
+  hold"). Nothing about it goes into the log, the canon or any other captain's context.
+- "Carry on" returns to the game as the app does now (after an order: it is the captain's turn again; after a line:
+  the turn goes on without it). "Close" leaves that captain's turn on hold.
+- If the hold lasts past the turn timer, the game pauses for everyone with the neutral pause message, as any pause
+  does, until that captain carries on. With one captain there is no timer; the game simply waits.
+- If the check cannot run, the game does what the app does now: the turn stops with the message that the safety
+  check could not run.
+
 ## Architecture
 
 ```
