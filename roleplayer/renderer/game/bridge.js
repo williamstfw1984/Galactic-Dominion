@@ -532,6 +532,8 @@
       const role = m.speaker_type === "npc" ? "Incoming" : m.speaker_type === "computer" ? "Computer" : title;
       el.innerHTML = `<div class="who"><b><span class="dia"></span>${esc(m.speaker_name)}</b><span class="lbl">${esc(role)}</span></div><p></p>`;
       box.appendChild(el);
+      // The report has begun to arrive: the order it answers is no longer waiting for it.
+      if (m.ref) { const chip = box.querySelector(`[data-await="${m.ref}"]`); if (chip) chip.remove(); }
       L = liveLines[m.key] = { el, p: el.querySelector("p"), m, text: "", item: null, ended: false };
       if (S.audio.tts && m.voice) L.item = GD.Speech.line(m.voice, m.made);   // it joins the queue now, and speaks as its sentences complete
     } else if (!L) {

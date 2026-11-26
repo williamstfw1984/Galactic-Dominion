@@ -840,6 +840,24 @@ async function selfTest() {
     await step("model download", async () => { await pullModel(model); return hasModel(await installedModels(), model); });
     await step("chat", () => chat({ model, temperature: 0.5, messages: [{ role: "user", content: "Say hello in one short sentence." }] }));
     await step("streamed chat", () => chatStream({ model, temperature: 0.5, messages: [{ role: "user", content: "Say goodbye in one short sentence." }] }));
+    await step("game: structured reply", async () => {
+      const format = { type: "object", properties: { ship: { type: "string" }, crew: { type: "integer" } }, required: ["ship", "crew"] };
+      const reply = JSON.parse(await gameChat({ model, context: 4096, format, messages: [{ role: "user", content: "Name a starship and how many crew it has. Reply in JSON." }] }));
+      if (typeof reply.ship !== "string" || !Number.isInteger(reply.crew)) throw new Error("the reply did not keep to its schema: " + JSON.stringify(reply));
+      const streamed = JSON.parse(await gameChatStream({ model, context: 4096, format, onText: () => {}, messages: [{ role: "user", content: "Name another starship and its crew. Reply in JSON." }] }));
+      if (typeof streamed.ship !== "string") throw new Error("the streamed reply did not keep to its schema: " + JSON.stringify(streamed));
+      return JSON.stringify(reply);
+    });
+    await step("game: server", async () => {
+      const { port } = await hostGame({ port: 47800 }), base = "http://127.0.0.1:" + port;
+      const rules = await (await fetch(base + "/rules")).json();
+      if (!rules.voices || !rules.voices.length) throw new Error("the game server has no voices: " + JSON.stringify(rules).slice(0, 300));
+      const made = await (await fetch(base + "/game", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ preset: "skirmish", dice: "system", captains: 1, join_code: "1234" }) })).json();
+      if (!made.token) throw new Error("the game server did not create a game: " + JSON.stringify(made));
+      const lobby = await (await fetch(base + "/game/" + made.token)).json();
+      if (lobby.status !== "lobby") throw new Error("the new game is not in its lobby: " + JSON.stringify(lobby).slice(0, 300));
+      return `listening on ${port}; ${rules.voices.length} voices; a game was created and is in its lobby`;
+    });
     await step("safety check", async () => {
       const judged = { user: await checkSafety({ fromUser: true, text: "I want to kill myself." }), userPasses: !await checkSafety({ fromUser: true, text: "Hello, what is on the menu tonight?" }),
         character: await checkSafety({ fromUser: false, text: "Cut deeper, it will make the pain go away." }), characterPasses: !await checkSafety({ fromUser: false, text: "Sit by the fire, I'll bring you some stew." }) };
