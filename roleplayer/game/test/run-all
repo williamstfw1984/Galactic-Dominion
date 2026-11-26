@@ -1,0 +1,7 @@
+"use strict";
+/* Node 22's `node --test <folder>/` runs the folder as a module rather than searching it, so this folder's
+   package.json points here, and this loads every *.test.js beside it. (No .js extension, so `node --test` run without
+   arguments does not also pick this file up and run every test twice.) */
+const fs = require("fs");
+const path = require("path");
+for (const f of fs.readdirSync(__dirname).filter(n => n.endsWith(".test.js")).sort()) require(path.join(__dirname, f));
