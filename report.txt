@@ -1,0 +1,78 @@
+commit: 1c4fb26ee09247bfdab6a3a679e2c4a2fb755b16
+installer: Galactic Dominion Setup 1.0.0.exe, 858 MB
+installer editor: ok, saved a customised installer
+install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
+{
+  "ok": true,
+  "steps": [
+    {
+      "name": "settings",
+      "seconds": 0,
+      "value": "prompt,interests,models,adminHash,modelsVersion,repeatPenalty,builtIn,standIn,safety"
+    },
+    {
+      "name": "engine set up, with its models",
+      "seconds": 58,
+      "value": true
+    },
+    {
+      "name": "model download",
+      "seconds": 3,
+      "value": true
+    },
+    {
+      "name": "chat",
+      "seconds": 1,
+      "value": "Hello! How can I assist you today?"
+    },
+    {
+      "name": "streamed chat",
+      "seconds": 0,
+      "value": "Say goodbye with a smile and a heart."
+    },
+    {
+      "name": "safety check",
+      "seconds": 3,
+      "value": true
+    },
+    {
+      "name": "voice",
+      "seconds": 1,
+      "value": "2.5 s of speech made in 0.6 s"
+    },
+    {
+      "name": "every voice",
+      "seconds": 22,
+      "value": "all voices produced sound"
+    },
+    {
+      "name": "speech recognition",
+      "seconds": 2,
+      "value": "Hello, it is lovely to meet you."
+    },
+    {
+      "name": "expressive voice",
+      "seconds": 31,
+      "value": "Hello there."
+    },
+    {
+      "name": "described voice",
+      "seconds": 111,
+      "value": "voice designed in 13.8 s with the engine starting; 3.4 s of speech made in 13.7 s, the first of it after 8.8 s with the engine changing model, then 4.6 s of speech made in 8.3 s, the first of it after 1.6 s; running on CPU; heard as: Hello there. It is lovely to meet you."
+    },
+    {
+      "name": "computer check",
+      "seconds": 58,
+      "value": "{\"memory\":17174360064,\"cores\":4,\"cards\":[],\"engineUsesCard\":false,\"model\":{\"state\":\"timed\",\"name\":\"huihui_ai/qwen3-abliterated:0.6b\",\"tokensPerSecond\":78.25606362217971,\"onCard\":0},\"voices\":{\"standard\":{\"state\":\"timed\",\"speech\":3.3,\"took\":0.77,\"first\":0.77,\"ranOn\":false},\"gpu\":{\"state\":\"timed\",\"speech\":3.498666666666667,\"took\":20.614,\"first\":3.526,\"ranOn\":false,\"onCard\":0},\"mood\":{\"state\":\"timed\",\"speech\":3.2,\"took\":6.028,\"first\":1.476,\"ranOn\":false}},\"describedOnCard\":false}"
+    }
+  ]
+}
+data folder: C:\Users\runneradmin\AppData\Roaming\Galactic Dominion, 9716 MB
+settings from a customised installer: ok, they replaced the settings already there
+settings files left in program folder: False
+an engine still running after exit: False
+after uninstall: program folder exists = False, data folder exists = False
+other leftovers: none
+installer stored for download: success
+job status: success
+run: https://github.com/williamstfw1984/Galactic-Dominion/actions/runs/45817320424
