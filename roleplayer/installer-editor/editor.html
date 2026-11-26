@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roleplayer Installer Editor</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'">
+<style>
+:root{--bg:#0E1016;--surface:#171A23;--raised:#1F2330;--border:#2C3142;--field:#4A5168;--text:#E8EAF0;--muted:#A0A6B8;--accent:#5ED3C0;--accent-ink:#0B1F1C;--accent-text:#C9F5EC;--danger:#FFB4A8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+h1,h2{margin:0;font-weight:600}h1{font-size:26px}h2{font-size:20px}
+p{margin:0}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+main{max-width:860px;margin:0 auto;padding:32px 16px 48px;display:flex;flex-direction:column;gap:24px}
+.card{padding:24px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:16px}
+form{display:flex;flex-direction:column;gap:24px}
+form[hidden]{display:none}
+label{display:block;font-weight:500;margin-bottom:6px}
+.field{width:100%;min-height:48px;padding:0 14px;border-radius:10px;border:1px solid var(--field);background:var(--bg)}
+textarea.field{padding:12px 14px;resize:vertical;font:14px/1.6 ui-monospace,Consolas,monospace}
+.help{margin-top:6px;font-size:13px;color:var(--muted)}
+.muted{color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.grow{flex:1 1 220px;min-width:0}
+.btn{min-height:48px;padding:0 18px;border-radius:10px;border:1px solid var(--accent);background:none;color:var(--accent-text);font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{padding-left:14px;border-radius:22px;background:var(--raised);border:1px solid var(--border);display:flex;align-items:center;font-size:14px}
+.chips button{width:44px;height:44px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:50%;font-size:18px}
+#built{display:flex;flex-direction:column;gap:8px}
+details{border:1px solid var(--border);border-radius:10px;padding:0 14px}
+summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:500}
+details label{font-weight:400;color:var(--muted)}
+details .field{margin-bottom:14px}
+.standin{margin-bottom:14px;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px 16px;align-items:center}
+.standin label,.standin .field{margin:0}
+#message{min-height:24px;font-weight:500}
+#message.error{color:var(--danger)}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Roleplayer Installer Editor</h1>
+<p class="muted">Changes the system prompt, the built-in prompts, the default interests and the admin password inside a Roleplayer installer, and saves the result as a new installer. Everything happens on this computer.</p>
+</header>
+
+<section class="card" aria-labelledby="h-file">
+<h2 id="h-file">1. Choose the installer</h2>
+<div class="row" style="align-items:center"><button type="button" class="btn" id="choose">Choose installer</button><p class="grow" id="chosen"></p></div>
+</section>
+
+<form id="editor" hidden>
+<section class="card" aria-labelledby="h-prompt">
+<h2 id="h-prompt">2. Main system prompt</h2>
+<div><label for="prompt">Sent to every character</label><textarea class="field" id="prompt" rows="16" required></textarea>
+<p class="help">These tags are filled in automatically: [NAME] [AGE] [GENDER] [PERSONALITY] [INTERESTS] [SCENARIO] [OTHER_CHARACTERS] [WORDS] [USER_NAME] [USER_AGE] [USER_GENDER] [USER_FACTS]</p></div>
+</section>
+
+<section class="card" aria-labelledby="h-built">
+<div class="row" style="align-items:center"><h2 id="h-built" class="grow">3. Built-in prompts</h2><button type="button" class="btn" id="factory">Restore factory defaults</button></div>
+<p class="muted">The other text the program sends to the AI. Tags in square brackets are filled in at the moment the text is sent; a tag only works in the text it is listed for.</p>
+<div id="built"></div>
+</section>
+
+<section class="card" aria-labelledby="h-interests">
+<h2 id="h-interests">4. Default interests</h2>
+<ul class="chips" id="interests"></ul>
+<div class="row"><div class="grow"><label for="interest">Add an interest</label><input class="field" id="interest" type="text"></div><button type="button" class="btn" id="add">Add</button></div>
+</section>
+
+<section class="card" aria-labelledby="h-password">
+<h2 id="h-password">5. Admin password</h2>
+<div><label for="password">New admin password</label><input class="field" id="password" type="password" autocomplete="new-password">
+<p class="help">Leave empty to keep the password this installer already has.</p></div>
+</section>
+
+<section class="card" aria-labelledby="h-save">
+<h2 id="h-save">6. Save</h2>
+<div><button class="btn primary">Save new installer</button></div>
+</section>
+</form>
+
+<p id="message" role="status"></p>
+</main>
+<script src="built-in.js"></script>
+<script src="password.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let source = "", settings = null;
+
+function say(text, error = false){ $("message").textContent = text; $("message").classList.toggle("error", error); }
+
+function showInterests(){
+  $("interests").replaceChildren(...settings.interests.map(interest => {
+    const item = document.createElement("li"), remove = document.createElement("button");
+    item.textContent = interest;
+    remove.type = "button"; remove.textContent = "×"; remove.setAttribute("aria-label", "Remove " + interest);
+    remove.onclick = () => { settings.interests = settings.interests.filter(i => i !== interest); showInterests(); };
+    item.append(remove);
+    return item;
+  }));
+}
+
+function field(tag, id, value, group, key){
+  const el = document.createElement(tag);
+  el.className = "field"; el.id = id; el.value = value; el.spellcheck = false;
+  el.oninput = () => { settings[group][key] = el.value; };
+  return el;
+}
+function labelFor(id, text){ const label = document.createElement("label"); label.htmlFor = id; label.textContent = text; return label; }
+function section(title, ...content){
+  const details = document.createElement("details"), summary = document.createElement("summary");
+  summary.textContent = title; details.append(summary, ...content);
+  return details;
+}
+function showBuiltIn(){
+  const prompts = Object.entries(BuiltIn.PROMPTS).map(([key, prompt]) => {
+    const box = field("textarea", "b-" + key, settings.builtIn[key], "builtIn", key);
+    box.rows = Math.min(10, Math.ceil(box.value.length / 90) + box.value.split("\n").length);
+    return section(prompt.title, labelFor(box.id, prompt.note), box);
+  });
+  const words = document.createElement("div"); words.className = "standin";
+  for(const [key, use] of BuiltIn.STAND_INS) words.append(labelFor("s-" + key, use), field("input", "s-" + key, settings.standIn[key], "standIn", key));
+  const help = document.createElement("div"); help.className = "standin";
+  for(const [key, use] of BuiltIn.SAFETY_TEXTS) help.append(labelFor("h-" + key, use), field("input", "h-" + key, settings.safety[key], "safety", key));
+  $("built").replaceChildren(...prompts, section("Words used when something is empty, and names given to speakers", words), section("The help screen, shown when the safety check finds signs of suicide or self-harm", help));
+}
+
+function addInterest(){
+  const value = $("interest").value.trim();
+  if(!value) return;
+  if(settings.interests.some(i => i.toLowerCase() === value.toLowerCase())) return say("That interest is already in the list.", true);
+  settings.interests.push(value); $("interest").value = ""; say(""); showInterests();
+}
+
+async function choose(){
+  let opened;
+  try { opened = await window.api.open(); } catch(e){ $("editor").hidden = true; $("chosen").textContent = ""; return say(e.message, true); }
+  if(!opened) return;
+  source = opened.file; settings = opened.settings;
+  $("chosen").textContent = opened.name;
+  $("prompt").value = settings.prompt; $("password").value = ""; $("interest").value = "";
+  showBuiltIn(); showInterests(); say("");
+  $("editor").hidden = false;
+}
+
+async function save(){
+  const prompt = $("prompt").value, password = $("password").value;
+  if(!prompt.trim()) return say("The system prompt cannot be empty.", true);
+  const next = {...settings, prompt, adminHash: password ? hashPassword(password) : settings.adminHash};
+  try {
+    const saved = await window.api.save({source, settings: next});
+    if(saved) say("The new installer has been saved as " + saved);
+  } catch(e){ say(e.message, true); }
+}
+
+$("choose").onclick = choose;
+$("add").onclick = addInterest;
+$("factory").onclick = () => { Object.assign(settings, BuiltIn.factory()); showBuiltIn(); say("The built-in prompts are back to their factory wording. Save the new installer to keep them."); };
+$("interest").onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); addInterest(); } };
+$("editor").onsubmit = e => { e.preventDefault(); save(); };
+</script>
+</body>
+</html>

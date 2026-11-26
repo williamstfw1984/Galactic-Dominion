@@ -1,0 +1,65 @@
+{
+  "name": "roleplayer",
+  "productName": "Roleplayer",
+  "version": "1.0.0",
+  "description": "Roleplay conversations with local AI characters",
+  "author": "Roleplayer",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "fetch-voice": "node scripts/fetch-voice-model.js",
+    "dist": "electron-builder --win --x64 --publish never && node scripts/embed-settings.js",
+    "editor": "node scripts/make-editor.js && electron-builder --win portable --x64 --publish never --project dist/editor-app"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "kokoro-js": "1.2.1",
+    "yauzl": "3.2.0"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.roleplayer.app",
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "settings-format.js",
+      "built-in.js",
+      "helplines.js",
+      "renderer/**",
+      "package.json",
+      "node_modules/**",
+      "!node_modules/onnxruntime-node/bin/*/darwin/**",
+      "!node_modules/onnxruntime-node/bin/*/linux/**",
+      "!node_modules/onnxruntime-node/bin/*/win32/arm64/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "."
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "include": "build/installer.nsh"
+    },
+    "publish": null
+  }
+}

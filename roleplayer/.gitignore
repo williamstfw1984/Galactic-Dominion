@@ -1,0 +1,5 @@
+node_modules/
+dist/
+resources/speech-models/
+resources/voice-engine/
+resources/safety-models/

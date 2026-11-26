@@ -1,0 +1,227 @@
+name: Roleplayer - build and test Windows installer
+
+on:
+  push:
+    branches: [roleplayer]
+    paths: ["roleplayer/**", ".github/workflows/roleplayer.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 100
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: roleplayer
+    steps:
+      - name: Set report path
+        working-directory: ${{ github.workspace }}
+        run: |
+          "REPORT=$env:RUNNER_TEMP\report.txt" | Out-File $env:GITHUB_ENV -Append
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: roleplayer/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download speech models
+        run: npm run fetch-voice
+
+      # The two classifiers of the safety check are converted from fixed versions of their originals and shipped inside the
+      # installer. They are kept between builds: the key is the script, which names the versions, and the tools it uses.
+      - name: Fetch the safety check's classifiers from an earlier build
+        id: safety
+        uses: actions/cache/restore@v4
+        with:
+          path: roleplayer/resources/safety-models
+          key: safety-models-${{ hashFiles('roleplayer/scripts/make-safety-models.py') }}-torch-2.15.0-transformers-5.24.0-onnxruntime-1.32.0
+
+      - uses: actions/setup-python@v5
+        if: steps.safety.outputs.cache-hit != 'true'
+        with:
+          python-version: "3.13"
+
+      - name: Make the safety check's classifiers
+        if: steps.safety.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.15.0
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python -m pip install transformers==5.24.0 onnx==1.23.2 onnxscript==0.7.2 onnxruntime==1.32.0
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/make-safety-models.py resources/safety-models
+          if ($LASTEXITCODE) { "commit: $env:GITHUB_SHA", "safety check's classifiers: FAILED to make them" | Out-File $env:REPORT; exit 1 }
+
+      - name: Keep the safety check's classifiers for later builds
+        if: steps.safety.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: roleplayer/resources/safety-models
+          key: ${{ steps.safety.outputs.cache-primary-key }}
+
+      # The engine behind the described voice (Qwen3-TTS) is not published as a Windows program, so it is built here from a
+      # fixed version of its source and shipped inside the installer. It is kept between builds: the key names the version.
+      - name: Fetch the described-voice engine from an earlier build
+        id: voice
+        uses: actions/cache/restore@v4
+        with:
+          path: roleplayer/resources/voice-engine
+          key: voice-engine-2edb35f87b709a070b2d5379f77e5c52a1daa585-vulkan-1.4.357.0-1
+
+      - name: Build the described-voice engine
+        if: steps.voice.outputs.cache-hit != 'true'
+        working-directory: ${{ runner.temp }}
+        run: |
+          $log = "$env:RUNNER_TEMP\voice-build.log"
+          function Fail($step) { "commit: $env:GITHUB_SHA", "described-voice engine: FAILED to $step" | Out-File $env:REPORT; Get-Content $log -Tail 60 | Out-File $env:REPORT -Append; exit 1 }
+          function Check($step) { if ($LASTEXITCODE) { Fail $step } }
+          # What is needed to build the part that runs on a graphics card (Vulkan: Nvidia, AMD and Intel cards alike).
+          $vulkan = "1.4.357.0"
+          curl.exe -sSfL --retry 3 -o VulkanSDK-Installer.exe "https://sdk.lunarg.com/sdk/download/$vulkan/windows/vulkansdk-windows-X64-$vulkan.exe" 2>&1 | Tee-Object $log -Append
+          Check "download the graphics-card build tools"
+          $installed = Start-Process .\VulkanSDK-Installer.exe -ArgumentList "--accept-licenses", "--default-answer", "--confirm-command", "install" -Wait -PassThru
+          if ($installed.ExitCode) { "the installer ended with $($installed.ExitCode)" | Tee-Object $log -Append; Fail "install the graphics-card build tools" }
+          $env:VULKAN_SDK = "C:\VulkanSDK\$vulkan"
+          $env:PATH = "$env:VULKAN_SDK\bin;$env:PATH"
+          if (-not (Test-Path "$env:VULKAN_SDK\bin\glslc.exe")) { Fail "install the graphics-card build tools" }
+          git clone https://github.com/ServeurpersoCom/qwentts.cpp.git 2>&1 | Tee-Object $log -Append
+          Check "fetch its source"
+          cd qwentts.cpp
+          git checkout 2edb35f87b709a070b2d5379f77e5c52a1daa585 2>&1 | Tee-Object $log -Append
+          Check "fetch the version of its source that is used"
+          git submodule update --init --recursive 2>&1 | Tee-Object $log -Append
+          Check "fetch the other source it is built with"
+          # One build that runs on any computer: it carries a version of the arithmetic for each kind of processor and one for
+          # graphics cards, each in a file of its own, and picks when it starts. The graphics-card file is passed over on a
+          # computer that cannot use it.
+          cmake -B build -A x64 -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON -DGGML_VULKAN=ON 2>&1 | Tee-Object $log -Append
+          Check "prepare the build"
+          cmake --build build --config Release --parallel 2>&1 | Tee-Object $log -Append
+          Check "build"
+          $out = New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE\roleplayer\resources\voice-engine"
+          Get-ChildItem build -Recurse -Include tts-server.exe, ggml*.dll | Copy-Item -Destination $out
+          Rename-Item "$out\tts-server.exe" roleplayer-voice.exe
+          # The Microsoft libraries it was built against, so it also starts on a computer that does not have them.
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT\*.dll", "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.OpenMP\*.dll" | Copy-Item -Destination $out
+          Copy-Item LICENSE "$out\LICENSE-qwentts.txt"
+          Copy-Item ggml\LICENSE "$out\LICENSE-ggml.txt"
+          Copy-Item vendor\cpp-httplib\LICENSE "$out\LICENSE-cpp-httplib.txt"
+          Get-ChildItem $out | ForEach-Object { "$($_.Name), $([math]::Round($_.Length / 1KB)) KB" }
+          $missing = @("roleplayer-voice.exe", "ggml.dll", "ggml-base.dll", "ggml-cpu-x64.dll", "ggml-cpu-haswell.dll", "ggml-vulkan.dll", "vcruntime140.dll", "msvcp140.dll", "vcomp140.dll") | Where-Object { -not (Test-Path "$out\$_") }
+          if ($missing) { "commit: $env:GITHUB_SHA", "described-voice engine: FAILED, the build did not make $($missing -join ', '). It made $((Get-ChildItem $out).Name -join ', ')" | Out-File $env:REPORT; exit 1 }
+
+      - name: Keep the described-voice engine for later builds
+        if: steps.voice.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: roleplayer/resources/voice-engine
+          key: ${{ steps.voice.outputs.cache-primary-key }}
+
+      - name: Build installer
+        run: |
+          npm run dist
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run editor
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node -e "const { readInstaller } = require('./installer-file.js'), f = require('./settings-format.js'), fs = require('fs'); const exe = fs.readdirSync('dist').find(n => /Setup.*\.exe$/.test(n)); if (!f.valid(readInstaller('dist/' + exe).settings)) { console.error('the installer carries no valid settings'); process.exit(1); }"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $exe = Get-ChildItem dist -Filter "*.exe" | Select-Object -First 1
+          "commit: $env:GITHUB_SHA" | Out-File $env:REPORT
+          "installer: $($exe.Name), $([math]::Round($exe.Length / 1MB)) MB" | Out-File $env:REPORT -Append
+
+      - name: Install silently
+        run: |
+          $exe = Get-ChildItem dist -Filter "*.exe" | Select-Object -First 1
+          $custom = "$env:RUNNER_TEMP\custom-setup.exe"
+          node -e "const f=require('./settings-format.js'),fs=require('fs');const c=f.decode(fs.readFileSync('resources/settings.dat','utf8'));c.interests=['Installer test'];fs.writeFileSync(process.argv[1],f.encode(c))" "$env:RUNNER_TEMP\custom.dat"
+          @{ source = $exe.FullName; settings = "$env:RUNNER_TEMP\custom.dat"; target = $custom } | ConvertTo-Json | Set-Content "$env:RUNNER_TEMP\editor-job.json"
+          $env:ROLEPLAYER_EDITOR_SELFTEST = "$env:RUNNER_TEMP\editor-job.json"
+          Start-Process "dist\editor\Roleplayer Installer Editor.exe"
+          for ($i = 0; $i -lt 120 -and -not (Test-Path $custom); $i++) { Start-Sleep 2 }
+          Remove-Item Env:ROLEPLAYER_EDITOR_SELFTEST
+          if (-not (Test-Path $custom)) { "installer editor: FAILED, it did not save a customised installer" | Out-File $env:REPORT -Append; exit 1 }
+          "installer editor: ok, saved a customised installer" | Out-File $env:REPORT -Append
+          # Settings as an earlier install would have left them, which the customised installer has to replace.
+          New-Item -ItemType Directory -Force "$env:APPDATA\Roleplayer" | Out-Null
+          Copy-Item resources\settings.dat "$env:APPDATA\Roleplayer\settings.dat"
+          Start-Process $custom -ArgumentList "/S" -Wait
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter "Roleplayer.exe" | Select-Object -First 1
+          if (-not $app) { "install: FAILED, program not found" | Out-File $env:REPORT -Append; exit 1 }
+          if (-not (Test-Path "$($app.DirectoryName)\resources\voice-engine\roleplayer-voice.exe")) { "install: FAILED, the described-voice engine is not in the program folder" | Out-File $env:REPORT -Append; exit 1 }
+          "install: ok, $($app.DirectoryName)" | Out-File $env:REPORT -Append
+          "APP_DIR=$($app.DirectoryName)" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Self-test (engine download, model download, chat, every kind of voice, speech recognition, the check of the computer)
+        run: |
+          $env:ROLEPLAYER_SELFTEST = "$env:RUNNER_TEMP\selftest.json"
+          $p = Start-Process "$env:APP_DIR\Roleplayer.exe" -PassThru
+          if (-not $p.WaitForExit(45 * 60 * 1000)) { $p.Kill(); "self-test: FAILED, timed out" | Out-File $env:REPORT -Append; exit 1 }
+          if (-not (Test-Path $env:ROLEPLAYER_SELFTEST)) { "self-test: FAILED, no result file" | Out-File $env:REPORT -Append; exit 1 }
+          Get-Content $env:ROLEPLAYER_SELFTEST | Out-File $env:REPORT -Append
+          $data = "$env:APPDATA\Roleplayer"
+          "data folder: $data, $([math]::Round((Get-ChildItem $data -Recurse -File | Measure-Object Length -Sum).Sum / 1MB)) MB" | Out-File $env:REPORT -Append
+          $sameSettings = (Get-Content "$data\settings.dat" -Raw).Trim() -eq (Get-Content "$env:RUNNER_TEMP\custom.dat" -Raw).Trim()
+          "settings from a customised installer: $(if ($sameSettings) { 'ok, they replaced the settings already there' } else { 'FAILED, the program has different settings' })" | Out-File $env:REPORT -Append
+          $settingsLeft = [bool](Get-ChildItem "$env:APP_DIR\resources" -Filter "*settings.dat")
+          "settings files left in program folder: $settingsLeft" | Out-File $env:REPORT -Append
+          Start-Sleep 5
+          $engineLeft = [bool](Get-Process roleplayer-engine, roleplayer-voice, llama-server -ErrorAction SilentlyContinue)
+          "an engine still running after exit: $engineLeft" | Out-File $env:REPORT -Append
+          if (-not $sameSettings -or $settingsLeft -or $engineLeft -or -not (Get-Content $env:ROLEPLAYER_SELFTEST -Raw | ConvertFrom-Json).ok) { exit 1 }
+
+      - name: Uninstall silently and check nothing is left
+        run: |
+          $un = Get-ChildItem $env:APP_DIR -Filter "Uninstall*.exe" | Select-Object -First 1
+          Start-Process $un.FullName -ArgumentList "/S" -Wait
+          $data = "$env:APPDATA\Roleplayer"
+          for ($i = 0; $i -lt 60 -and ((Test-Path $env:APP_DIR) -or (Test-Path $data)); $i++) { Start-Sleep 2 }
+          "after uninstall: program folder exists = $(Test-Path $env:APP_DIR), data folder exists = $(Test-Path $data)" | Out-File $env:REPORT -Append
+          $left = Get-ChildItem "$env:APPDATA", "$env:LOCALAPPDATA", "$env:LOCALAPPDATA\Programs" -Filter "*oleplay*" -ErrorAction SilentlyContinue | ForEach-Object FullName
+          "other leftovers: $(if ($left) { $left -join '; ' } else { 'none' })" | Out-File $env:REPORT -Append
+          if ((Test-Path $env:APP_DIR) -or (Test-Path $data) -or $left) { exit 1 }
+
+      # A release, not a build artifact: one installer is larger than the storage a free account has for artifacts.
+      # Only a build that passed every test above is published: "Latest build" is always one that works.
+      - name: Publish the installer and the editor as the "Latest build" release
+        id: upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @(Get-ChildItem dist/*.exe, dist/editor/*.exe -ErrorAction SilentlyContinue | ForEach-Object FullName)
+          if (-not $files) { "nothing was built"; exit 1 }
+          $notes = "Built from commit $env:GITHUB_SHA. All tests passed."
+          gh release view latest-build --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE) { gh release create latest-build --repo $env:GITHUB_REPOSITORY --title "Latest build" --notes $notes --prerelease --target $env:GITHUB_SHA }
+          else {
+            # The release keeps its tag, which is moved to this build's commit, so its source download is this build's too.
+            gh api -X PATCH "repos/$env:GITHUB_REPOSITORY/git/refs/tags/latest-build" -f sha=$env:GITHUB_SHA -F force=true | Out-Null
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            gh release edit latest-build --repo $env:GITHUB_REPOSITORY --notes $notes
+          }
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          gh release upload latest-build @files --repo $env:GITHUB_REPOSITORY --clobber
+          exit $LASTEXITCODE
+
+      - name: Publish test report to the ci-results branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if (-not (Test-Path $env:REPORT)) { "commit: $env:GITHUB_SHA" | Out-File $env:REPORT }
+          "installer stored for download: ${{ steps.upload.outcome }}" | Out-File $env:REPORT -Append
+          "job status: ${{ job.status }}" | Out-File $env:REPORT -Append
+          "run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID" | Out-File $env:REPORT -Append
+          $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes($env:REPORT))
+          $sha = gh api "repos/$env:GITHUB_REPOSITORY/contents/report.txt?ref=ci-results" --jq .sha 2>$null
+          $putArgs = @("-X", "PUT", "repos/$env:GITHUB_REPOSITORY/contents/report.txt", "-f", "message=Test report for $env:GITHUB_SHA", "-f", "branch=ci-results", "-f", "content=$content")
+          if ($sha) { $putArgs += @("-f", "sha=$sha") }
+          gh api @putArgs | Out-Null

@@ -1,0 +1,29 @@
+{
+  "name": "roleplayer-installer-editor",
+  "productName": "Roleplayer Installer Editor",
+  "version": "1.0.0",
+  "description": "Changes the prompts, default interests and admin password inside a Roleplayer installer",
+  "author": "Roleplayer",
+  "private": true,
+  "main": "main.js",
+  "build": {
+    "appId": "com.roleplayer.installer-editor",
+    "directories": {
+      "output": "../editor"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Roleplayer Installer Editor.exe"
+    },
+    "publish": null
+  }
+}
