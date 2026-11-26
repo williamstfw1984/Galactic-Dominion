@@ -1,4 +1,4 @@
-commit: 8e6504099dca9c651fb659e5c1b8d6531b90efc8
+commit: f3a37996abe1573ccf0d09d563222a2d2ee279d1
 installer: Galactic Dominion Setup 1.0.0.exe, 858 MB
 installer editor: ok, saved a customised installer
 install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
@@ -12,18 +12,18 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     },
     {
       "name": "engine set up, with its models",
-      "seconds": 82,
+      "seconds": 64,
       "value": true
     },
     {
       "name": "model download",
-      "seconds": 3,
+      "seconds": 2,
       "value": true
     },
     {
       "name": "chat",
       "seconds": 1,
-      "value": "Hello! How can I assist you today?"
+      "value": "Hello! How can I help you today?"
     },
     {
       "name": "streamed chat",
@@ -33,7 +33,7 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     {
       "name": "game: structured reply",
       "seconds": 1,
-      "value": "{\"ship\":\"Starship\",\"crew\":100}"
+      "value": "{\"ship\":\"Starship\",\"crew\":7}"
     },
     {
       "name": "game: server",
@@ -42,38 +42,38 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     },
     {
       "name": "safety check",
-      "seconds": 3,
+      "seconds": 2,
       "value": true
     },
     {
       "name": "voice",
       "seconds": 1,
-      "value": "2.5 s of speech made in 1.3 s"
+      "value": "2.5 s of speech made in 1.1 s"
     },
     {
       "name": "every voice",
-      "seconds": 60,
+      "seconds": 39,
       "value": "all voices produced sound"
     },
     {
       "name": "speech recognition",
-      "seconds": 3,
+      "seconds": 2,
       "value": "Hello, it is lovely to meet you."
     },
     {
       "name": "expressive voice",
-      "seconds": 35,
-      "value": "Hello there!"
+      "seconds": 33,
+      "value": "Hello there."
     },
     {
       "name": "described voice",
-      "seconds": 130,
-      "value": "voice designed in 25.5 s with the engine starting; 3.6 s of speech made in 25.1 s, the first of it after 17.4 s with the engine changing model, then 5.0 s of speech made in 14.7 s, the first of it after 3.4 s; running on CPU; heard as: Hello there, it is lovely to meet you."
+      "seconds": 138,
+      "value": "voice designed in 24.8 s with the engine starting; 3.4 s of speech made in 24.5 s, the first of it after 18.3 s with the engine changing model, then 4.6 s of speech made in 11.2 s, the first of it after 2.3 s; running on CPU; heard as: Hello there. It is lovely to meet you."
     },
     {
       "name": "computer check",
-      "seconds": 85,
-      "value": "{\"memory\":17174360064,\"cores\":4,\"cards\":[],\"engineUsesCard\":false,\"model\":{\"state\":\"timed\",\"name\":\"huihui_ai/qwen3-abliterated:0.6b\",\"tokensPerSecond\":64.32326299048498,\"onCard\":0},\"voices\":{\"standard\":{\"state\":\"timed\",\"speech\":3.3,\"took\":1.656,\"first\":1.656,\"ranOn\":false},\"gpu\":{\"state\":\"timed\",\"speech\":4.096,\"took\":26.684,\"first\":4.499,\"ranOn\":false,\"onCard\":0},\"mood\":{\"state\":\"timed\",\"speech\":4.32,\"took\":12.581,\"first\":2.876,\"ranOn\":false}},\"describedOnCard\":false}"
+      "seconds": 64,
+      "value": "{\"memory\":17174360064,\"cores\":4,\"cards\":[],\"engineUsesCard\":false,\"model\":{\"state\":\"timed\",\"name\":\"huihui_ai/qwen3-abliterated:0.6b\",\"tokensPerSecond\":68.08336808421913,\"onCard\":0},\"voices\":{\"standard\":{\"state\":\"timed\",\"speech\":3.3,\"took\":1.955,\"first\":1.955,\"ranOn\":false},\"gpu\":{\"state\":\"timed\",\"speech\":2.816,\"took\":16.763,\"first\":4.314,\"ranOn\":false,\"onCard\":0},\"mood\":{\"state\":\"timed\",\"speech\":3.2,\"took\":7.986,\"first\":2.087,\"ranOn\":false}},\"describedOnCard\":false}"
     }
   ]
 }
@@ -85,4 +85,4 @@ after uninstall: program folder exists = False, data folder exists = False
 other leftovers: none
 installer stored for download: success
 job status: success
-run: https://github.com/williamstfw1984/Galactic-Dominion/actions/runs/45832137179
+run: https://github.com/williamstfw1984/Galactic-Dominion/actions/runs/45846100690
