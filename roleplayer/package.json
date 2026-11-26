@@ -1,9 +1,9 @@
 {
-  "name": "roleplayer",
-  "productName": "Roleplayer",
+  "name": "galactic-dominion",
+  "productName": "Galactic Dominion",
   "version": "1.0.0",
   "description": "Roleplay conversations with local AI characters",
-  "author": "Roleplayer",
+  "author": "Galactic Dominion",
   "private": true,
   "main": "main.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "com.roleplayer.app",
+    "appId": "com.galacticdominion.app",
     "asar": false,
     "files": [
       "main.js",

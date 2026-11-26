@@ -1,5 +1,5 @@
 "use strict";
-/* Roleplayer: desktop program. Everything it downloads or saves lives in DATA, which the uninstaller deletes. */
+/* Galactic Dominion: desktop program. Everything it downloads or saves lives in DATA, which the uninstaller deletes. */
 const { app, BrowserWindow, Menu, ipcMain, net, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -16,12 +16,12 @@ const ENGINE = {
   url: "https://github.com/ollama/ollama/releases/download/v0.40.16/ollama-windows-amd64.zip",
   sha256: "50fcf5ad54277f2fa5d173ebfc93bcb017adbc0c9ef2314daabc96ca9e6aa64e"
 };
-const PORT = 11517;                                   // private port, so a separately installed Ollama is left alone
+const PORT = 11527;                                   // private port, so a separately installed Ollama is left alone
 const BASE = "http://127.0.0.1:" + PORT;
 const DATA = app.getPath("userData");
 const MODELS_DIR = path.join(DATA, "models");
 const ENGINE_DIR = process.env.ROLEPLAYER_ENGINE_DIR || path.join(DATA, "engine");   // the variable is set only by automated tests, to use an engine that is already unpacked
-const ENGINE_EXE = path.join(ENGINE_DIR, process.platform === "win32" ? "roleplayer-engine.exe" : "ollama");
+const ENGINE_EXE = path.join(ENGINE_DIR, process.platform === "win32" ? "galactic-dominion-engine.exe" : "ollama");
 const RES = app.isPackaged ? process.resourcesPath : path.join(__dirname, "resources");
 const SETTINGS = path.join(DATA, "settings.dat");
 const SELFTEST = process.env.ROLEPLAYER_SELFTEST;        // path of a result file; set only by automated tests
@@ -371,8 +371,8 @@ async function* speakExpressive(text, voice, limitMs, stop) {
    card when it finds one it can use, and on the processor otherwise. A model that did not start on the graphics card
    is started on the processor. */
 const DESCRIBED = {
-  id: "described", port: 11518,
-  exe: path.join(RES, "voice-engine", process.platform === "win32" ? "roleplayer-voice.exe" : "tts-server"),
+  id: "described", port: 11528,
+  exe: path.join(RES, "voice-engine", process.platform === "win32" ? "galactic-dominion-voice.exe" : "tts-server"),
   folder: path.join(DATA, "voice-models"), samples: path.join(DATA, "voices"),
   source: "https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF/resolve/main/",
   files: {
@@ -722,7 +722,7 @@ handle("voice:sample", key => voiceSample(key));
 handle("voice:import", voice => importVoice(voice));
 
 /* Characters and roleplays saved to a file of the user's choosing, and read back from one. */
-const FILE_KIND = [{ name: "Roleplayer file", extensions: ["json"] }];
+const FILE_KIND = [{ name: "Galactic Dominion file", extensions: ["json"] }];
 const MOST_FILE = 50 * 1024 * 1024;                     // larger than any character or roleplay with its pictures and voices
 handle("file:save", async ({ name, text }) => {
   const picked = await dialog.showSaveDialog(win, { title: "Download", defaultPath: path.join(app.getPath("documents"), name), filters: FILE_KIND });
@@ -761,7 +761,7 @@ handle("log:delete", id => fs.rmSync(id ? logFile(id) : LOGS, { recursive: true,
 function createWindow() {
   Menu.setApplicationMenu(null);
   win = new BrowserWindow({
-    width: 1280, height: 860, minWidth: 360, minHeight: 560, backgroundColor: "#0B0D12", title: "Roleplayer",
+    width: 1280, height: 860, minWidth: 360, minHeight: 560, backgroundColor: "#0B0D12", title: "Galactic Dominion",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false }
   });
   win.loadFile(path.join(__dirname, "renderer", "index.html"));

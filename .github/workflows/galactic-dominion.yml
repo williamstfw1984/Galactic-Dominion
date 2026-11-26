@@ -1,9 +1,9 @@
-name: Roleplayer - build and test Windows installer
+name: Galactic Dominion - build and test Windows installer
 
 on:
   push:
-    branches: [roleplayer]
-    paths: ["roleplayer/**", ".github/workflows/roleplayer.yml"]
+    branches: [main]
+    paths: ["roleplayer/**", ".github/workflows/galactic-dominion.yml"]
   workflow_dispatch:
 
 permissions:
@@ -108,7 +108,7 @@ jobs:
           Check "build"
           $out = New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE\roleplayer\resources\voice-engine"
           Get-ChildItem build -Recurse -Include tts-server.exe, ggml*.dll | Copy-Item -Destination $out
-          Rename-Item "$out\tts-server.exe" roleplayer-voice.exe
+          Rename-Item "$out\tts-server.exe" galactic-dominion-voice.exe
           # The Microsoft libraries it was built against, so it also starts on a computer that does not have them.
           $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
           Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT\*.dll", "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.OpenMP\*.dll" | Copy-Item -Destination $out
@@ -116,7 +116,7 @@ jobs:
           Copy-Item ggml\LICENSE "$out\LICENSE-ggml.txt"
           Copy-Item vendor\cpp-httplib\LICENSE "$out\LICENSE-cpp-httplib.txt"
           Get-ChildItem $out | ForEach-Object { "$($_.Name), $([math]::Round($_.Length / 1KB)) KB" }
-          $missing = @("roleplayer-voice.exe", "ggml.dll", "ggml-base.dll", "ggml-cpu-x64.dll", "ggml-cpu-haswell.dll", "ggml-vulkan.dll", "vcruntime140.dll", "msvcp140.dll", "vcomp140.dll") | Where-Object { -not (Test-Path "$out\$_") }
+          $missing = @("galactic-dominion-voice.exe", "ggml.dll", "ggml-base.dll", "ggml-cpu-x64.dll", "ggml-cpu-haswell.dll", "ggml-vulkan.dll", "vcruntime140.dll", "msvcp140.dll", "vcomp140.dll") | Where-Object { -not (Test-Path "$out\$_") }
           if ($missing) { "commit: $env:GITHUB_SHA", "described-voice engine: FAILED, the build did not make $($missing -join ', '). It made $((Get-ChildItem $out).Name -join ', ')" | Out-File $env:REPORT; exit 1 }
 
       - name: Keep the described-voice engine for later builds
@@ -145,36 +145,36 @@ jobs:
           node -e "const f=require('./settings-format.js'),fs=require('fs');const c=f.decode(fs.readFileSync('resources/settings.dat','utf8'));c.interests=['Installer test'];fs.writeFileSync(process.argv[1],f.encode(c))" "$env:RUNNER_TEMP\custom.dat"
           @{ source = $exe.FullName; settings = "$env:RUNNER_TEMP\custom.dat"; target = $custom } | ConvertTo-Json | Set-Content "$env:RUNNER_TEMP\editor-job.json"
           $env:ROLEPLAYER_EDITOR_SELFTEST = "$env:RUNNER_TEMP\editor-job.json"
-          Start-Process "dist\editor\Roleplayer Installer Editor.exe"
+          Start-Process "dist\editor\Galactic Dominion Installer Editor.exe"
           for ($i = 0; $i -lt 120 -and -not (Test-Path $custom); $i++) { Start-Sleep 2 }
           Remove-Item Env:ROLEPLAYER_EDITOR_SELFTEST
           if (-not (Test-Path $custom)) { "installer editor: FAILED, it did not save a customised installer" | Out-File $env:REPORT -Append; exit 1 }
           "installer editor: ok, saved a customised installer" | Out-File $env:REPORT -Append
           # Settings as an earlier install would have left them, which the customised installer has to replace.
-          New-Item -ItemType Directory -Force "$env:APPDATA\Roleplayer" | Out-Null
-          Copy-Item resources\settings.dat "$env:APPDATA\Roleplayer\settings.dat"
+          New-Item -ItemType Directory -Force "$env:APPDATA\Galactic Dominion" | Out-Null
+          Copy-Item resources\settings.dat "$env:APPDATA\Galactic Dominion\settings.dat"
           Start-Process $custom -ArgumentList "/S" -Wait
-          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter "Roleplayer.exe" | Select-Object -First 1
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter "Galactic Dominion.exe" | Select-Object -First 1
           if (-not $app) { "install: FAILED, program not found" | Out-File $env:REPORT -Append; exit 1 }
-          if (-not (Test-Path "$($app.DirectoryName)\resources\voice-engine\roleplayer-voice.exe")) { "install: FAILED, the described-voice engine is not in the program folder" | Out-File $env:REPORT -Append; exit 1 }
+          if (-not (Test-Path "$($app.DirectoryName)\resources\voice-engine\galactic-dominion-voice.exe")) { "install: FAILED, the described-voice engine is not in the program folder" | Out-File $env:REPORT -Append; exit 1 }
           "install: ok, $($app.DirectoryName)" | Out-File $env:REPORT -Append
           "APP_DIR=$($app.DirectoryName)" | Out-File $env:GITHUB_ENV -Append
 
       - name: Self-test (engine download, model download, chat, every kind of voice, speech recognition, the check of the computer)
         run: |
           $env:ROLEPLAYER_SELFTEST = "$env:RUNNER_TEMP\selftest.json"
-          $p = Start-Process "$env:APP_DIR\Roleplayer.exe" -PassThru
+          $p = Start-Process "$env:APP_DIR\Galactic Dominion.exe" -PassThru
           if (-not $p.WaitForExit(45 * 60 * 1000)) { $p.Kill(); "self-test: FAILED, timed out" | Out-File $env:REPORT -Append; exit 1 }
           if (-not (Test-Path $env:ROLEPLAYER_SELFTEST)) { "self-test: FAILED, no result file" | Out-File $env:REPORT -Append; exit 1 }
           Get-Content $env:ROLEPLAYER_SELFTEST | Out-File $env:REPORT -Append
-          $data = "$env:APPDATA\Roleplayer"
+          $data = "$env:APPDATA\Galactic Dominion"
           "data folder: $data, $([math]::Round((Get-ChildItem $data -Recurse -File | Measure-Object Length -Sum).Sum / 1MB)) MB" | Out-File $env:REPORT -Append
           $sameSettings = (Get-Content "$data\settings.dat" -Raw).Trim() -eq (Get-Content "$env:RUNNER_TEMP\custom.dat" -Raw).Trim()
           "settings from a customised installer: $(if ($sameSettings) { 'ok, they replaced the settings already there' } else { 'FAILED, the program has different settings' })" | Out-File $env:REPORT -Append
           $settingsLeft = [bool](Get-ChildItem "$env:APP_DIR\resources" -Filter "*settings.dat")
           "settings files left in program folder: $settingsLeft" | Out-File $env:REPORT -Append
           Start-Sleep 5
-          $engineLeft = [bool](Get-Process roleplayer-engine, roleplayer-voice, llama-server -ErrorAction SilentlyContinue)
+          $engineLeft = [bool](Get-Process galactic-dominion-engine, galactic-dominion-voice, llama-server -ErrorAction SilentlyContinue)
           "an engine still running after exit: $engineLeft" | Out-File $env:REPORT -Append
           if (-not $sameSettings -or $settingsLeft -or $engineLeft -or -not (Get-Content $env:ROLEPLAYER_SELFTEST -Raw | ConvertFrom-Json).ok) { exit 1 }
 
@@ -182,10 +182,10 @@ jobs:
         run: |
           $un = Get-ChildItem $env:APP_DIR -Filter "Uninstall*.exe" | Select-Object -First 1
           Start-Process $un.FullName -ArgumentList "/S" -Wait
-          $data = "$env:APPDATA\Roleplayer"
+          $data = "$env:APPDATA\Galactic Dominion"
           for ($i = 0; $i -lt 60 -and ((Test-Path $env:APP_DIR) -or (Test-Path $data)); $i++) { Start-Sleep 2 }
           "after uninstall: program folder exists = $(Test-Path $env:APP_DIR), data folder exists = $(Test-Path $data)" | Out-File $env:REPORT -Append
-          $left = Get-ChildItem "$env:APPDATA", "$env:LOCALAPPDATA", "$env:LOCALAPPDATA\Programs" -Filter "*oleplay*" -ErrorAction SilentlyContinue | ForEach-Object FullName
+          $left = Get-ChildItem "$env:APPDATA", "$env:LOCALAPPDATA", "$env:LOCALAPPDATA\Programs" -Filter "*alactic*" -ErrorAction SilentlyContinue | ForEach-Object FullName
           "other leftovers: $(if ($left) { $left -join '; ' } else { 'none' })" | Out-File $env:REPORT -Append
           if ((Test-Path $env:APP_DIR) -or (Test-Path $data) -or $left) { exit 1 }
 

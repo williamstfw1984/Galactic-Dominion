@@ -1,13 +1,13 @@
 {
-  "name": "roleplayer-installer-editor",
-  "productName": "Roleplayer Installer Editor",
+  "name": "galactic-dominion-installer-editor",
+  "productName": "Galactic Dominion Installer Editor",
   "version": "1.0.0",
-  "description": "Changes the prompts, default interests and admin password inside a Roleplayer installer",
-  "author": "Roleplayer",
+  "description": "Changes the prompts, default interests and admin password inside a Galactic Dominion installer",
+  "author": "Galactic Dominion",
   "private": true,
   "main": "main.js",
   "build": {
-    "appId": "com.roleplayer.installer-editor",
+    "appId": "com.galacticdominion.installer-editor",
     "directories": {
       "output": "../editor"
     },
@@ -22,7 +22,7 @@
       ]
     },
     "portable": {
-      "artifactName": "Roleplayer Installer Editor.exe"
+      "artifactName": "Galactic Dominion Installer Editor.exe"
     },
     "publish": null
   }

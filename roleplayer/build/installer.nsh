@@ -1,15 +1,15 @@
 ; Stop this program's private AI engine (and the model process it started) and its voice engine before files are
 ; removed, so the uninstaller can delete everything. A separately installed Ollama is not touched.
 !macro customUnInit
-  nsExec::Exec 'taskkill /F /T /IM roleplayer-engine.exe'
-  nsExec::Exec 'taskkill /F /T /IM roleplayer-voice.exe'
+  nsExec::Exec 'taskkill /F /T /IM galactic-dominion-engine.exe'
+  nsExec::Exec 'taskkill /F /T /IM galactic-dominion-voice.exe'
 !macroend
 
 ; The installer keeps a copy of itself in this folder at install time, and the standard
 ; uninstaller leaves it behind. Remove it on a real uninstall (not during an upgrade).
 !macro customUnInstall
   ${ifNot} ${isUpdated}
-    RMDir /r "$LOCALAPPDATA\roleplayer-updater"
+    RMDir /r "$LOCALAPPDATA\galactic-dominion-updater"
   ${endIf}
 !macroend
 

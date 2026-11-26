@@ -4,7 +4,7 @@ which judges a character's line for encouraging or enabling it. Each is download
 made smaller by keeping its weights in 8 bits. Both forms are checked against the original before the small one is kept;
 the script fails if they disagree.
 
-Run by the build (see .github/workflows/roleplayer.yml), with torch, transformers, onnx and onnxruntime installed.
+Run by the build (see .github/workflows/galactic-dominion.yml), with torch, transformers, onnx and onnxruntime installed.
 Usage: python make-safety-models.py <output folder>"""
 import json, os, shutil, sys
 import numpy as np, onnxruntime, torch

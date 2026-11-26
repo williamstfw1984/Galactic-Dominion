@@ -1,5 +1,5 @@
 "use strict";
-/* Reads and writes the settings a Roleplayer installer carries after its own data. Used by the build and by the installer editor. */
+/* Reads and writes the settings a Galactic Dominion installer carries after its own data. Used by the build and by the installer editor. */
 const fs = require("fs");
 const { pipeline } = require("stream/promises");
 const format = require("./settings-format.js");

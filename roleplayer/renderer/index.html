@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roleplayer</title>
+<title>Galactic Dominion</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:">
 <style>
 @font-face{font-family:Inter;src:url(fonts/inter.woff2) format("woff2");font-weight:100 900}
@@ -1272,8 +1272,8 @@ const fileText = (value, most) => typeof value === "string" ? value.trim().slice
 const fileError = message => { throw new Error(message); };
 function readFile(raw, kind){
   let data;
-  try { data = JSON.parse(raw); } catch { fileError("This is not a Roleplayer file."); }
-  if(data?.roleplayer !== FILE_FORMAT || !["character", "roleplay"].includes(data.kind)) fileError("This is not a Roleplayer file, or it comes from a different version of the program.");
+  try { data = JSON.parse(raw); } catch { fileError("This is not a Galactic Dominion file."); }
+  if(data?.roleplayer !== FILE_FORMAT || !["character", "roleplay"].includes(data.kind)) fileError("This is not a Galactic Dominion file, or it comes from a different version of the program.");
   if(data.kind !== kind) fileError(`This file holds a ${data.kind}, not a ${kind}.`);
   const voices = (Array.isArray(data.voices) ? data.voices : []).map(v => ({ref:String(v?.ref), unsaved:v?.unsaved === true, name:fileText(v?.name, MOST.name) || "Voice", gender:["female", "male"].includes(v?.gender) ? v.gender : "", description:fileText(v?.description, MOST.mood), sample:typeof v?.sample === "string" ? v.sample : ""}));
   const sound = sample => { try { const start = atob(sample.slice(0, 16)); return start.startsWith("RIFF") && start.slice(8, 12) === "WAVE"; } catch { return false; } };
@@ -1455,7 +1455,7 @@ const fullScreenLabel = () => document.fullscreenElement ? "Leave full screen" :
 /* The bar across the top of the main pages: the program's sections, the theme, and what the page adds. */
 function navHtml(current, extra = ""){
   const link = (key, act, label) => `<button data-act="${act}" ${current === key ? 'aria-current="page"' : ""}>${label}</button>`;
-  return `<header class="nav"><div class="brand">Roleplayer</div><nav aria-label="Main">${link("chat", "goHome", "Roleplays")}${link("cast", "goCast", "Characters")}${link("model", "goModel", "AI models")}${link("memory", "goMemory", "About you")}</nav><div class="grow"></div><button class="icon ring" data-act="theme" aria-label="Theme: ${S.theme === "light" ? "light. Switch to dark" : "dark. Switch to light"}">${S.theme === "light" ? ICON.sun : ICON.moon}</button>${extra}</header>`;
+  return `<header class="nav"><div class="brand">Galactic Dominion</div><nav aria-label="Main">${link("chat", "goHome", "Roleplays")}${link("cast", "goCast", "Characters")}${link("model", "goModel", "AI models")}${link("memory", "goMemory", "About you")}</nav><div class="grow"></div><button class="icon ring" data-act="theme" aria-label="Theme: ${S.theme === "light" ? "light. Switch to dark" : "dark. Switch to light"}">${S.theme === "light" ? ICON.sun : ICON.moon}</button>${extra}</header>`;
 }
 const newRpButton = `<button class="btn" data-act="uploadRp">${ICON.up}Upload roleplay</button><button class="btn primary" data-act="newRp">${ICON.plus}New roleplay</button>`;
 const rpCast = r => rpChars(r).map(c => c.name).join(", ") || "No characters";
@@ -1650,7 +1650,7 @@ ${callLog ? `<p class="muted" id="log-count" tabindex="-1">${callLog.entries.len
   password: () => `<div style="max-width:420px"><label class="lbl" for="pw">New password</label><input class="field" id="pw" type="password" autocomplete="new-password" aria-describedby="pw-h" data-password value="${esc(newPassword)}"><div class="help" id="pw-h">Leave empty to keep the current password. At least 8 characters.</div></div>`
 };
 function adminHtml(){
-  return `<div class="admin"><nav class="adminnav" aria-label="Admin sections"><div style="padding:0 12px 16px"><div class="cap" style="color:var(--accent-text)">Admin</div><div class="brand">Roleplayer</div></div>
+  return `<div class="admin"><nav class="adminnav" aria-label="Admin sections"><div style="padding:0 12px 16px"><div class="cap" style="color:var(--accent-text)">Admin</div><div class="brand">Galactic Dominion</div></div>
 <div class="tabs">${ADMIN_TABS.map(([key, label]) => `<button data-act="adminTab" data-v="${key}" ${adminTab === key ? 'aria-current="page"' : ""}>${label}</button>`).join("")}</div>
 <p class="muted small" style="padding:0 12px">Changes apply straight away so you can try them, and are kept when you save.</p>
 <button class="btn primary" data-act="saveSettings">Save settings</button><button class="btn" data-act="adminClose">Lock and close</button></nav>
