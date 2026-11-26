@@ -74,7 +74,7 @@
     mic.addEventListener("contextmenu", ev => ev.preventDefault());
     $("#cmd-in").addEventListener("input", ev => { holdSpoken(null); if (ev.isTrusted) typed = $("#cmd-in").value.trim() !== ""; });   // editing by hand stops a spoken phrase being sent
     if (window.GDMap && window.THREE) {
-      map = window.GDMap.create($("#map"), { onSelect: coord => { selected = coord; const i = $("#cmd-in"); if (i) i.placeholder = coord ? "Sector " + coord + " selected. Say \"set course for the selected sector\"" : "Give an order, then Enter. Hold Space or the button to speak"; } });
+      map = GD.chart = window.GDMap.create($("#map"), { onSelect: coord => { selected = coord; const i = $("#cmd-in"); if (i) i.placeholder = coord ? "Sector " + coord + " selected. Say \"set course for the selected sector\"" : "Give an order, then Enter. Hold Space or the button to speak"; } });
     } else { map = null; $("#map").insertAdjacentHTML("beforeend", `<p class="empty" style="padding:14px">The star chart could not be loaded.</p>`); }
     // Where the window is too narrow for the log beside the chart, the log becomes a fixed box that scrolls.
     const layout = () => { const top = $("#br-top"); if (!top) return; const l = top.children[0], r = top.children[1]; top.classList.toggle("stacked", r.offsetTop > l.offsetTop + 10); };
@@ -86,7 +86,7 @@
     GD.stops.push(() => {
       left = true; clearTimeout(pollTimer); clearInterval(clockTimer); clearInterval(rollTick); clearInterval(spokenTimer); dieClose();
       GD.Speech.stop(); GD.Mic.release(); if (streamCtl) streamCtl.abort(); streamOn = false;
-      if (map) { map.destroy(); map = null; }
+      if (map) { map.destroy(); map = null; GD.chart = null; }
       ro.disconnect(); document.removeEventListener("keydown", talkKey); document.removeEventListener("keyup", talkKey);
       window.removeEventListener("blur", blur); document.removeEventListener("visibilitychange", vis);
     });
@@ -210,17 +210,16 @@
     $("#p-crew").innerHTML = s.crew.map(o => {
       const state = o.injury ? (o.injury.type === "psychological" ? "Shaken" : cap(o.injury.severity) + " injury") + " · " + o.injury.turns_remaining + " turn" + (o.injury.turns_remaining === 1 ? "" : "s") : "Ready";
       const at = o.attrs.map(a => `<span>${esc(a.label)} <b>${a.value}</b>${a.bonus ? ` <em>(${a.base}+${a.bonus})</em>` : ""}</span>`).join("");
-      return `<div class="row" style="align-items:flex-start"><span style="min-width:0"><b>${esc(o.name)}</b><br><span class="sub">${esc(o.title)} · ${esc(o.species)} · ${esc(o.gender)}</span><span class="crew-at">${at}</span></span><span class="lbl" style="color:${o.injury ? "var(--warn)" : "var(--good)"};flex:none">${esc(state)}</span></div>`;
+      return `<div class="crew-o"><div class="crew-top"><span><b>${esc(o.name)}</b><br><span class="sub">${esc(o.title)} · ${esc(o.species)} · ${esc(o.gender)}</span></span><span class="lbl" style="color:${o.injury ? "var(--warn)" : "var(--good)"}">${esc(state)}</span></div><div class="crew-at">${at}</div></div>`;
     }).join("") + two("Ship Computer", "Readouts and facts, free to ask", esc(s.computer.status), "var(--vio-2)");
   }
   const bar = (label, value, max, cls, text) => `<div><div style="display:flex;justify-content:space-between"><span class="lbl">${esc(label)}</span><span class="num" style="font-size:17px">${esc(text)}</span></div><div class="bar ${cls || ""}" style="margin-top:6px"><i style="width:${Math.max(0, Math.min(100, value / max * 100))}%"></i></div></div>`;
   function ship(s) {
     const sh = s.ship;
-    $("#t-ship").textContent = (sh.class || "") + (sh.registry ? " · " + sh.registry : "");
     $("#t-ship").closest(".hud-h").childNodes[1].textContent = "Ship // " + sh.name;
     const attrs = sh.attrs.map(a => row(esc(a.label), a.value + (a.bonus + a.items ? ` <span style="color:var(--good)">(+${a.bonus + a.items})</span>` : ""))).join("");
     const html = `<div class="shipbars">${bar("Hull", sh.hull, 100, sh.hull < 50 ? "r" : sh.hull < 80 ? "w" : "g", sh.hull + "%")}${bar("Shields", sh.shields, 100, "", sh.shields_up ? sh.shields + "%" : "Down")}</div>` +
-      attrs + row("Alert", cap(sh.alert) + (sh.weapons ? " · weapons armed" : " · weapons cold")) + row("Damaged", sh.damaged.length ? esc(sh.damaged.map(cap).join(", ")) : "None") +
+      (sh.class || sh.registry ? row("Class", esc([sh.class, sh.registry].filter(Boolean).join(" · "))) : "") + attrs + row("Alert", cap(sh.alert) + (sh.weapons ? " · weapons armed" : " · weapons cold")) + row("Damaged", sh.damaged.length ? esc(sh.damaged.map(cap).join(", ")) : "None") +
       row("Sector", esc(s.position.replace(/,/g, " · "))) + row("Range this turn", sh.range_ly + " ly" + (s.fleet.is_fleet ? " (slowest in fleet)" : "")) + row("Cargo", sh.cargo_used + " of " + sh.cargo_max + " slots");
     const box = $("#p-ship");
     // Bonus points from the Engineer's Power Management, placed once, before the first order.
@@ -253,7 +252,7 @@
     let h = d.factions.length ? d.factions.map(f => two(esc(f.name), esc(f.reason || ""), esc(f.step) + (f.dir > 0 ? " ▲" : f.dir < 0 ? " ▼" : ""), stepCol[f.step])).join("") : `<p class="empty">No other faction has been met yet.</p>`;
     h += `<div class="subh">Active channel</div>` + (d.channel ? two(esc(d.channel.with), esc((d.channel.faction || "Unaligned") + (d.channel.attitude ? " · " + d.channel.attitude : "")), "Open", "var(--good)") : `<p class="empty">Hailing frequencies closed.</p>`);
     h += `<div class="subh">Database</div>` + (d.database ? `<p><b>${esc(d.database.subject)}</b>: ${esc(d.database.text)}</p>` : `<p class="empty">Ask the Computer about a species or faction. It is free.</p>`);
-    h += `<div class="subh">Agreements</div>` + (d.agreements.length ? d.agreements.map(a => `<div class="row"><span>${esc(a.text)}</span></div>`).join("") : `<p class="empty">No promises, treaties, debts or threats on record.</p>`);
+    h += `<div class="subh">Agreements</div>` + (d.agreements.length ? d.agreements.map(a => `<p class="row" style="display:block">${esc(a.text)}</p>`).join("") : `<p class="empty">No promises, treaties, debts or threats on record.</p>`);
     h += `<div class="subh">Contacts</div>` + (d.contacts.length ? d.contacts.map(c => two(esc(c.name), esc((c.faction || "Unaligned") + (c.attitude ? " · " + c.attitude : "")), "Met at " + esc(c.met_at))).join("") : `<p class="empty">Nobody met yet.</p>`);
     $("#p-dip").innerHTML = h;
   }
@@ -264,7 +263,7 @@
     if (s.held_back) h += `<p class="note" style="padding-top:8px">${s.held_back} item${s.held_back > 1 ? "s are" : " is"} waiting for a free cargo slot. Use, jettison or transfer something.</p>`;
     s.captains.forEach(c => { if (c.in_fleet && c.id !== s.me.id && c.inventory && c.inventory.length) h += `<div class="subh">${esc(c.ship.name)} holds</div>` + itemList(c.inventory); });
     $("#p-inv").innerHTML = h;
-    $("#t-inv").textContent = s.ship.cargo_used + " of " + s.ship.cargo_max + " · use at the start of a turn";
+    $("#t-inv").textContent = s.ship.cargo_used + " of " + s.ship.cargo_max;
   }
   function fleet(s) {
     const leader = s.fleet.leader, byId = {};
@@ -429,7 +428,7 @@
     if (!s.fleet.is_fleet) { box.innerHTML = ""; box.dataset.on = ""; return; }
     if (!box.dataset.on) {
       box.dataset.on = "1";
-      box.innerHTML = `<div class="chat"><div class="lbl">Fleet chat · free · not seen by the crew</div><div class="lines" id="chat-lines"></div><form id="chat-f"><input class="in" id="chat-in" maxlength="400" autocomplete="off" aria-label="Fleet chat message" placeholder="Message the other captains"></form></div>`;
+      box.innerHTML = `<div class="chat"><div class="lbl">Fleet chat · free · not seen by the crew</div><div class="chat-lines" id="chat-lines"></div><form id="chat-f"><input class="in" id="chat-in" maxlength="400" autocomplete="off" aria-label="Fleet chat message" placeholder="Message the other captains"></form></div>`;
       $("#chat-f").addEventListener("submit", ev => { ev.preventDefault(); const i = $("#chat-in"); if (!i.value.trim()) return; GD.api("POST", GD.game("/chat"), { text: i.value }).then(() => { i.value = ""; poll(); }).catch(e => GD.error(e, "#err")); });
     }
     const l = $("#chat-lines"), n = s.chat.length;

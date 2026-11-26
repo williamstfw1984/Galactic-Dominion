@@ -568,7 +568,7 @@
 				if (d.notable) { L.push(row('Notable', esc(d.notable))); }
 			}
 			L.push(row('Held by', d.faction_name ? esc(d.faction_name) : 'Unclaimed'));
-			if (d.known && d.note) { L.push('<div class="row"><span class="x">' + esc(d.note) + '</span></div>'); }
+			if (d.known && d.note) { L.push('<p class="x">' + esc(d.note) + '</p>'); }
 			if (d.scan) { L.push(row('Scan', esc(d.scan), 'gdm-scan')); }
 			if (d.captains.length) {
 				var others = d.captains.filter(function (c) { return !c.me; });

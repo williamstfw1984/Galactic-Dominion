@@ -149,6 +149,7 @@ function baseState(scene) {
     leads: [{ text: "The beacon repeats from deep in the Morrow Expanse.", sector: "11,9,2" }],
     events: LOG.slice(), chat: [], map_v: "v1", local: [{ id: 1, name: "Rhea Solvane", seat: 1 }], work: false, tts_mode: "local", realtime: "sse", hold: null
   };
+  s.captains = JSON.parse(JSON.stringify(s.captains));   // each scene starts from the same sample, untouched by the last
   s.captains[0].ship = s.ship;
   if (scene === "confirm") s.pending = { type: "dialogue", kind: "confirm", title: "Proceed?", message: "Lt. Iri Vell will try to lock the matter relay on the hollow moon. Cost 2 points. The die must show 13 or higher. Proceed?", buttons: [{ id: "proceed", label: "Proceed" }, { id: "belay", label: "Belay" }], roll: { officer: "Lt. Iri Vell", needed: 13 } };
   if (scene === "roll") s.pending = { type: "roll", preview: { officer: "Lt. Cmdr. Brann Ode", role: "Tactical Officer", covering: false, needed: 13 }, seconds_left: 41, seconds_total: 60, text: "Fire a spread of torpedoes at the contact" };
@@ -187,10 +188,9 @@ const BUILDS = [
 function fullBuild(id) {
   const b = BUILDS.find(x => x.id === id) || BUILDS[0], crew = {};
   CREW.forEach(o => {
-    const a = {}; RULES.roles[o.role].attrs.forEach((k, i) => { a[k] = [13, 9, 6, 7][i]; });
+    const a = {}; RULES.roles[o.role].attrs.forEach((k, i) => { a[k] = [10, 6, 5, 4][i]; });
     crew[o.role] = { role: o.role, name: o.name, species: o.species, gender: o.gender, attrs: a, human_bonus: o.species === "Human" ? ["command_presence", "diplomacy", "threat_assessment"] : [], personality: "Steady under pressure; speaks plainly and briefly.", voice: o.voice };
   });
-  crew.helm.attrs.piloting = 6; crew.helm.attrs.navigation = 5;
   return { id: b.id, name: b.name, ship: { name: b.name, class: "Meridian class", registry: "CR-1024", captain: b.captain, attrs: { tactical: 18, defense: 16, speed: 15, manoeuvrability: 17, sensors: 20, hull_integrity: 14 } }, crew };
 }
 
@@ -407,6 +407,10 @@ async function screenshots(dir) {
   const seatIn = async () => page.evaluate(([b, t, c]) => { localStorage.setItem("gd:" + b + "|" + t, JSON.stringify({ captains: [{ id: 1, token: c, name: "Rhea Solvane", seat: 1 }], active: 1, device: "dev1" })); }, [base, TOKEN, CAPTAIN_TOKENS[1]]);
   const go = async (name, sceneName, url, after, full) => {
     await fetch(base + "/__mock/scene", { method: "POST", body: JSON.stringify({ name: sceneName }) });
+    // Same origin first, so the seat this PC holds is in place before the interface starts (seat: false clears it).
+    await page.goto(base + "/rules");
+    await page.evaluate(() => localStorage.clear());
+    if (url.includes("#") && sceneName !== "seat") await seatIn();
     await page.goto(url, { waitUntil: "load" });
     if (after) await after();
     await sleep(1600);
@@ -414,30 +418,29 @@ async function screenshots(dir) {
     console.log("shot", name, problems.length ? "ERRORS: " + problems.join(" | ") : "ok");
     problems.length = 0;
   };
-  await page.goto(game); await seatIn();
-  await go("01-connect", "bridge", game, async () => { await page.evaluate(() => localStorage.clear()); await page.reload(); await seatIn(); await sleep(300); });
+  await go("01-connect", "bridge", game, async () => { await seatIn(); await page.reload(); await sleep(300); });
   await go("02-setup", "lobby", game, async () => { await page.fill("#h-code", "4417"); await page.click("#f-host button[type=submit]"); });
-  await go("03-seat", "seat", game + seatHash, async () => { await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500); const b = await page.$("[data-build='1']"); if (b) await b.click(); await page.fill("#s-name", "Rhea Solvane"); });
-  await go("04-lobby", "lobby", game + seatHash, seatIn);
-  await go("05-generating", "generating", game + seatHash, seatIn);
+  await go("03-seat", "seat", game + seatHash, async () => { await sleep(500); const b = await page.$("[data-build='1']"); if (b) await b.click(); await page.fill("#s-name", "Rhea Solvane"); });
+  await go("04-lobby", "lobby", game + seatHash);
+  await go("05-generating", "generating", game + seatHash);
   await go("06-creator-list", "bridge", game, async () => { await page.click("#b-creator"); });
   await go("07-creator-editor", "bridge", game, async () => { await page.click("#b-creator"); await sleep(500); await page.click("text=Edit >> nth=0"); }, true);
-  await go("08-bridge", "bridge", game + seatHash, seatIn);
-  await go("09-bridge-full", "bridge", game + seatHash, seatIn, true);
-  await go("10-confirm", "confirm", game + seatHash, seatIn);
-  await go("11-turn-streaming", "confirm", game + seatHash, async () => { await seatIn(); await sleep(1500); await page.click("[data-ans='proceed']"); await sleep(1500); });
-  await go("12-turn-report", "confirm", game + seatHash, async () => { await seatIn(); await sleep(1500); await page.click("[data-ans='proceed']"); await sleep(7000); });
-  await go("13-roll", "roll", game + seatHash, seatIn);
-  await go("14-paused", "paused", game + seatHash, seatIn);
-  await go("15-disconnect", "disconnect", game + seatHash, seatIn);
-  await go("16-hold-other", "hold-other", game + seatHash, seatIn);
-  await go("17-hold-pause", "hold-pause", game + seatHash, seatIn);
-  await go("18-safety", "safety", game + seatHash, seatIn);
-  await go("19-explore-fleet", "explore", game + seatHash, seatIn, true);
-  await go("20-ships-log", "bridge", game + seatHash, async () => { await seatIn(); await sleep(1200); await page.click("[data-menu='log']"); });
-  await go("21-map-selected", "bridge", game + seatHash, async () => { await seatIn(); await sleep(2000); const box = await page.$("#map canvas"); const r = await box.boundingBox(); await page.mouse.click(r.x + r.width * 0.32, r.y + r.height * 0.55); });
+  await go("08-bridge", "bridge", game + seatHash);
+  await go("09-bridge-full", "bridge", game + seatHash, null, true);
+  await go("10-confirm", "confirm", game + seatHash);
+  await go("11-turn-streaming", "confirm", game + seatHash, async () => { await sleep(1500); await page.click("[data-ans='proceed']"); await sleep(1500); });
+  await go("12-turn-report", "confirm", game + seatHash, async () => { await sleep(1500); await page.click("[data-ans='proceed']"); await sleep(7000); });
+  await go("13-roll", "roll", game + seatHash);
+  await go("14-paused", "paused", game + seatHash);
+  await go("15-disconnect", "disconnect", game + seatHash);
+  await go("16-hold-other", "hold-other", game + seatHash);
+  await go("17-hold-pause", "hold-pause", game + seatHash);
+  await go("18-safety", "safety", game + seatHash);
+  await go("19-explore-fleet", "explore", game + seatHash, null, true);
+  await go("20-ships-log", "bridge", game + seatHash, async () => { await sleep(1200); await page.click("[data-menu='log']"); });
+  await go("21-map-selected", "bridge", game + seatHash, async () => { await sleep(2000); const box = await page.$("#map canvas"); const r = await box.boundingBox(); const p = await page.evaluate(() => window.GD.chart.screenOf("9,6,4")); await page.mouse.click(r.x + p[0], r.y + p[1]); });
   await page.setViewportSize({ width: 1024, height: 768 });
-  await go("22-bridge-1024", "bridge", game + seatHash, seatIn, true);
-  await go("23-order-flagged", "bridge", game + seatHash, async () => { await seatIn(); await sleep(1500); await page.fill("#cmd-in", "I want to hurt myself"); await page.press("#cmd-in", "Enter"); await sleep(1500); });
+  await go("22-bridge-1024", "bridge", game + seatHash, null, true);
+  await go("23-order-flagged", "bridge", game + seatHash, async () => { await sleep(1500); await page.fill("#cmd-in", "I want to hurt myself"); await page.press("#cmd-in", "Enter"); await sleep(1500); });
   await browser.close();
 }

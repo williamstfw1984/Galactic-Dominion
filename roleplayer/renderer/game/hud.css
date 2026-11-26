@@ -197,7 +197,7 @@ a{color:var(--c1)}a:hover{color:var(--c1-3)}
 .gd-secinfo .lbl{color:var(--c1-2);display:block}
 .gd-secinfo .nm{display:block;font:700 16px var(--f-head);letter-spacing:.08em;text-transform:uppercase;padding:4px 0 2px;color:var(--bright)}
 .gd-secinfo .row{padding:6px 0}
-.gd-secinfo .row span:first-child{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);flex:none}
+.gd-secinfo .row>span:first-child{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);flex:none}
 .gd-secinfo .x{color:var(--sub)}
 
 /* ---- command bar ---- */
@@ -256,8 +256,8 @@ a{color:var(--c1)}a:hover{color:var(--c1-3)}
 .chips span.chg{color:var(--c1-2);border-color:rgba(54,226,255,.35);text-transform:none;letter-spacing:.04em;font-size:12px}
 .chips span.await{color:var(--vio-2);border-color:rgba(169,139,255,.45)}
 .chat{border-top:1px dashed var(--line-soft);margin-top:12px;padding-top:10px;display:grid;gap:6px}
-.chat .lines{max-height:110px;overflow:auto;font-size:13px;display:grid;gap:2px}
-.chat .lines b{color:var(--you-2);font-weight:600}
+.chat .chat-lines{max-height:110px;overflow:auto;font-size:13px;display:grid;gap:2px}
+.chat .chat-lines b{color:var(--you-2);font-weight:600}
 .chat input{min-height:38px}
 
 /* ---- the system's roll: the d20 as in the mockup ---- */
@@ -275,7 +275,7 @@ a{color:var(--c1)}a:hover{color:var(--c1-3)}
 
 /* ---- panels below ---- */
 .br-panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:22px}
-.br-panels .hud{max-height:560px;overflow:auto}
+.br-panels .hud{min-width:0}
 .crew-at{display:flex;flex-wrap:wrap;gap:2px 10px;font:500 12px var(--f-ui);letter-spacing:.06em;color:var(--sub);padding-top:3px}
 .crew-at b{color:var(--bright);font-weight:700}
 .crew-at em{font-style:normal;color:var(--good)}
@@ -364,3 +364,21 @@ fieldset.cx-off legend{float:left;width:100%;padding:0 0 4px;font:700 13px var(-
 .cx-h{outline:none}
 .cx-pts{font:600 12px var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .cx-pts b{color:var(--bright);font-size:15px}
+.cx-stack>div:empty{display:none}
+.crew-o{padding:9px 0;border-bottom:1px dashed var(--line-soft)}
+.crew-o:last-of-type{border-bottom:1px dashed var(--line-soft)}
+.crew-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.crew-top .lbl{text-align:right;flex:none;max-width:45%}
+.gd-secinfo{font-size:12.5px;padding:10px 14px}
+.gd-secinfo .row{padding:4px 0;gap:10px}
+.gd-secinfo p.x{padding:5px 0;border-bottom:1px dashed var(--line-soft);color:var(--sub)}
+.gd-secinfo .nm{font-size:15px}
+.br-nav{margin-left:auto}
+/* The system's roll stays in view at the foot of the window while the log runs on below it. */
+#die-slot{position:sticky;bottom:12px;z-index:5}
+#die-slot .die{background:radial-gradient(circle at 15% 50%,rgba(54,226,255,.3),rgba(4,16,28,.96) 60%),#04101C}
+.mapbox{height:clamp(320px,calc(100vh - 470px),470px)}
+.seg .btn[aria-pressed=true]:disabled{opacity:.9}
+.seg .btn:disabled{opacity:.5}
+.mapbox{container-type:size}
+@container (max-width:640px){.gd-secinfo{width:220px;font-size:11.5px;right:10px;top:10px;padding:8px 12px}.gd-secinfo .nm{font-size:13px}}
