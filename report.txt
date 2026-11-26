@@ -1,4 +1,4 @@
-commit: 1c4fb26ee09247bfdab6a3a679e2c4a2fb755b16
+commit: 8e6504099dca9c651fb659e5c1b8d6531b90efc8
 installer: Galactic Dominion Setup 1.0.0.exe, 858 MB
 installer editor: ok, saved a customised installer
 install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
@@ -12,7 +12,7 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     },
     {
       "name": "engine set up, with its models",
-      "seconds": 58,
+      "seconds": 82,
       "value": true
     },
     {
@@ -28,7 +28,17 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     {
       "name": "streamed chat",
       "seconds": 0,
-      "value": "Say goodbye with a smile and a heart."
+      "value": "Say goodbye in one short sentence."
+    },
+    {
+      "name": "game: structured reply",
+      "seconds": 1,
+      "value": "{\"ship\":\"Starship\",\"crew\":100}"
+    },
+    {
+      "name": "game: server",
+      "seconds": 2,
+      "value": "listening on 47800; 28 voices; a game was created and is in its lobby"
     },
     {
       "name": "safety check",
@@ -38,32 +48,32 @@ install: ok, C:\Users\runneradmin\AppData\Local\Programs\galactic-dominion
     {
       "name": "voice",
       "seconds": 1,
-      "value": "2.5 s of speech made in 0.6 s"
+      "value": "2.5 s of speech made in 1.3 s"
     },
     {
       "name": "every voice",
-      "seconds": 22,
+      "seconds": 60,
       "value": "all voices produced sound"
     },
     {
       "name": "speech recognition",
-      "seconds": 2,
+      "seconds": 3,
       "value": "Hello, it is lovely to meet you."
     },
     {
       "name": "expressive voice",
-      "seconds": 31,
-      "value": "Hello there."
+      "seconds": 35,
+      "value": "Hello there!"
     },
     {
       "name": "described voice",
-      "seconds": 111,
-      "value": "voice designed in 13.8 s with the engine starting; 3.4 s of speech made in 13.7 s, the first of it after 8.8 s with the engine changing model, then 4.6 s of speech made in 8.3 s, the first of it after 1.6 s; running on CPU; heard as: Hello there. It is lovely to meet you."
+      "seconds": 130,
+      "value": "voice designed in 25.5 s with the engine starting; 3.6 s of speech made in 25.1 s, the first of it after 17.4 s with the engine changing model, then 5.0 s of speech made in 14.7 s, the first of it after 3.4 s; running on CPU; heard as: Hello there, it is lovely to meet you."
     },
     {
       "name": "computer check",
-      "seconds": 58,
-      "value": "{\"memory\":17174360064,\"cores\":4,\"cards\":[],\"engineUsesCard\":false,\"model\":{\"state\":\"timed\",\"name\":\"huihui_ai/qwen3-abliterated:0.6b\",\"tokensPerSecond\":78.25606362217971,\"onCard\":0},\"voices\":{\"standard\":{\"state\":\"timed\",\"speech\":3.3,\"took\":0.77,\"first\":0.77,\"ranOn\":false},\"gpu\":{\"state\":\"timed\",\"speech\":3.498666666666667,\"took\":20.614,\"first\":3.526,\"ranOn\":false,\"onCard\":0},\"mood\":{\"state\":\"timed\",\"speech\":3.2,\"took\":6.028,\"first\":1.476,\"ranOn\":false}},\"describedOnCard\":false}"
+      "seconds": 85,
+      "value": "{\"memory\":17174360064,\"cores\":4,\"cards\":[],\"engineUsesCard\":false,\"model\":{\"state\":\"timed\",\"name\":\"huihui_ai/qwen3-abliterated:0.6b\",\"tokensPerSecond\":64.32326299048498,\"onCard\":0},\"voices\":{\"standard\":{\"state\":\"timed\",\"speech\":3.3,\"took\":1.656,\"first\":1.656,\"ranOn\":false},\"gpu\":{\"state\":\"timed\",\"speech\":4.096,\"took\":26.684,\"first\":4.499,\"ranOn\":false,\"onCard\":0},\"mood\":{\"state\":\"timed\",\"speech\":4.32,\"took\":12.581,\"first\":2.876,\"ranOn\":false}},\"describedOnCard\":false}"
     }
   ]
 }
@@ -75,4 +85,4 @@ after uninstall: program folder exists = False, data folder exists = False
 other leftovers: none
 installer stored for download: success
 job status: success
-run: https://github.com/williamstfw1984/Galactic-Dominion/actions/runs/45817320424
+run: https://github.com/williamstfw1984/Galactic-Dominion/actions/runs/45832137179
