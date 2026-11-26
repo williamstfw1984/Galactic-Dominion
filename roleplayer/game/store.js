@@ -2,13 +2,13 @@
 /* Storage, replacing the plugin's class-db.php and the table helpers of class-game.php (§11.4).
 
    Everything lives under the data folder passed in (never computed here), one folder per game:
-     <dataDir>/games/<id>/game.json       the game's shared state (what was the lcars_game post and its meta)
+     <dataDir>/games/<id>/game.json       the game's shared state (what was the plugin's game post and its meta)
      <dataDir>/games/<id>/captains.json   one row per seat
      <dataDir>/games/<id>/events.json     the event log: append-only, one row per turn or system event (§11.1)
      <dataDir>/games/<id>/canon.json      world canon: generated facts and everything established in play
      <dataDir>/games/<id>/sectors.json    only non-empty or visited sectors; empty space is implicit (§5.3)
      <dataDir>/games/<id>/missions.json   missions
-     <dataDir>/games/<id>/meta.json       a pause asked for while a turn held the game (the plugin's _lcars_pause_req)
+     <dataDir>/games/<id>/meta.json       a pause asked for while a turn held the game (the plugin's pause-request meta)
    Every write is atomic: the file is written to .tmp and renamed over the old one. Rows keep the plugin's column
    names. Ids count up from 1 within a game and are never reused. Times are stored as the plugin stored them, UTC
    "YYYY-MM-DD HH:MM:SS", which also decides the order canon is read in (updated_at to the second, then id).

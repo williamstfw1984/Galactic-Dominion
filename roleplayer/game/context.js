@@ -155,7 +155,7 @@ function live(w, g, c, party, caps) {
     lines.push("Turn points left: " + Rules.intval(stage.points?.[c.id] ?? 0) + ". Momentum: " + stage.momentum + ".");
     if (Turn().stageForced(g, party)) lines.push("Points have run out: the only actions now possible are a decisive attempt at the Objective or retreating.");
     if (stage.threat && typeof stage.threat === "object" && !empty(stage.threat.active)) {
-      lines.push("ACTIVE THREAT: " + stage.threat.description + (stage.threat.foreseeable_by.length ? " Preparation that could have seen it coming: " + stage.threat.foreseeable_by.join(", ") + ". Actions already taken this stage: " + (stage.used_all.length ? stage.used_all.join(", ") : "none") + "." : ""));
+      lines.push("ACTIVE THREAT: " + stage.threat.description + (toList(stage.threat.foreseeable_by).length ? " Preparation that could have seen it coming: " + toList(stage.threat.foreseeable_by).join(", ") + ". Actions already taken this stage: " + (toList(stage.used_all).length ? toList(stage.used_all).join(", ") : "none") + "." : ""));
       if (Rules.intval(stage.points?.[c.id] ?? 0) <= 0) lines.push("The captain has 0 points and is under threat: the only possible action is a retreat.");
     }
   } else {
