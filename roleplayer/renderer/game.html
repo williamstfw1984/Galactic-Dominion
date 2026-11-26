@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galactic Dominion</title>
+<!-- Everything is local: scripts, styles and fonts come with the app. Only the game server is reached, over http. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self' http: ws:; media-src 'self' blob: data: mediastream:">
+<link rel="stylesheet" href="game/hud.css">
+</head>
+<body>
+<div id="gd-app"><div class="gd-root"></div></div>
+<script src="../built-in.js"></script>
+<script src="../helplines.js"></script>
+<script src="vendor/three.min.js"></script>
+<script src="game/core.js"></script>
+<script src="game/speech.js"></script>
+<script src="game/map.js"></script>
+<script src="game/creator.js"></script>
+<script src="game/lobby.js"></script>
+<script src="game/bridge.js"></script>
+<script src="game/safety.js"></script>
+<script src="game/main.js"></script>
+</body>
+</html>
